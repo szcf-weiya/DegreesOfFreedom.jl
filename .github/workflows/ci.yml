@@ -21,7 +21,7 @@ jobs:
       # for consistency with previous setting and also recommended at https://github.com/r-lib/actions/tree/v2/setup-r-dependencies, continue to install `libcurl4-openssl-dev`
       - name: Install pdftk on Linux
         if: runner.os == 'Linux'
-        run: sudo add-apt-repository -y ppa:malteworld/ppa && sudo apt-get update -y && sudo apt-get install -y pdftk
+        run: sudo apt-get update -y && sudo apt-get install -y pdftk
       - name: Install Dependencies for R
         run: |
           r = getOption("repos")
