@@ -83,6 +83,11 @@ function rep_calc_df(nrep = 10; kw...)
     return mean(dfs), std(dfs)/sqrt(nrep)
 end
 
+"""
+    df_regtree(; ps = [1, 5, 10], maxd = 4)
+
+Experiment for degrees of freedom for regression trees with number of features `ps` and maximum depth `maxd`.
+"""
 function df_regtree(; ps = [1, 5, 10], maxd = 4)
     np = length(ps)
     nd = maxd + 1

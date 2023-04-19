@@ -10,12 +10,14 @@ function ridge(X::AbstractMatrix, y::AbstractVector, λ::Real)
     return ridge(X, y, λ, 1.0I)
 end
 
-function ridge(X::AbstractMatrix, y::AbstractVector, λ::Real, Ψ::Union{AbstractMatrix, UniformScaling})
+function ridge(X::AbstractMatrix, y::AbstractVector, λ::Real, Ψ::Union{AbstractMatrix, UniformScaling}, verbose = false)
     # A = inv(X' * X + λ * Ψ) * X'
     n = size(X, 1)
     B = X' * X /n + λ / n * Ψ
     cond = det(B) * det(inv(B))
-    println("condition number = ", cond)
+    if verbose
+        println("condition number = ", cond)
+    end
     A = inv(X' * X /n + λ / n * Ψ) * X' / n
     H = X * A
     df = tr(H)
@@ -109,10 +111,16 @@ function weight_matrix(β::AbstractVector, tol::Real)
     return diagm(a / 2)
 end
 
+"""
+    iter_ridge(X::AbstractMatrix, y::AbstractVector, λ::Real)
+
+Conduct iterative ridge regression for `y` on `X` with smoothness penalty parameter `λ`.
+"""
 function iter_ridge(X::AbstractMatrix, y::AbstractVector, λ::Real; tol = sqrt(eps()), 
                     maxiter = 10000, 
                     remove = false,
                     err_type = "norm",
+                    verbose = false,
                     # β1 = ridge(X, y, λ)
                     )
     n, p = size(X)
@@ -155,7 +163,9 @@ function iter_ridge(X::AbstractMatrix, y::AbstractVector, λ::Real; tol = sqrt(e
         else
             err = maximum(abs.(βs[:, end] - β2))
         end
-        println("iter = $iter, err = $err")
+        if verbose
+            println("iter = $iter, err = $err")
+        end
         if (err < tol) | (iter > maxiter)
             break
         end
@@ -208,7 +218,9 @@ function gen_data(n = 100, p = 20, p1 = 3; standardize_y = false, design = "orth
 end
 
 """
-result: n100p120, n100p20
+    demo_lasso_df(n, p)
+
+Demo for degrees of freedom of lasso via the iterative ridge regression.
 """
 function demo_lasso_df(n = 100, p = 20, p1 = 5, folder = "/tmp")
     X, y, β = gen_data(n, p, p1, standardize_y = true, design = "ortho")
@@ -238,7 +250,13 @@ function demo_lasso_df(n = 100, p = 20, p1 = 5, folder = "/tmp")
     save_plots(figs, output = figname * ".pdf")
 end
 
+"""
+    demo_lasso(n, p, p1)
+
+Demo for Lasso fitted by iterative ridge regressions.
+"""
 function demo_lasso(n = 100, p = 20, p1 = 5; folder = "/tmp")
+    @assert p1 < p "p1 should be smaller than p"
     X, y, β = gen_data(n, p, p1, standardize_y = true)
     res_cvlasso = glmnetcv(X, y, nfolds = n, standardize = false, intercept = false)
     λs = res_cvlasso.lambda
@@ -313,7 +331,9 @@ function MMfunc()
 end
 
 """
-    Display multiple figures into a gif and a mp4.
+    anim_plot(βs, βlasso)
+
+Compare the lasso solution from glmnet and the iterative ridge via an animated plot.
 """
 function anim_plot(βs, βlasso)
     m = size(βs, 2)
