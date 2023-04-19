@@ -1,0 +1,50 @@
+name: CI
+
+on: [push]
+
+jobs:
+  test-and-docs:
+    name: Julia ${{ matrix.julia-version }} - ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04]
+        julia-version: ['1.8']
+        r-version: ['4.2.1']
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: ${{ matrix.r-version }}
+      # actually it seems that without installing `libcurl4-openssl-dev`, there also exists a libcurl.so, but at `/lib/x86_64-linux-gnu/libcurl.so.4` instead of `/usr/lib/x86_64-linux-gnu/libcurl.so.4`
+      # for consistency with previous setting and also recommended at https://github.com/r-lib/actions/tree/v2/setup-r-dependencies, continue to install `libcurl4-openssl-dev`
+      - name: Install pdftk on Linux
+        if: runner.os == 'Linux'
+        run: sudo add-apt-repository -y ppa:malteworld/ppa && sudo apt-get update -y && sudo apt-get install -y pdftk
+      - name: Install Dependencies for R
+        run: |
+          r = getOption("repos")
+          r["CRAN"] = "https://cloud.r-project.org/"
+          options(repos=r)
+          install.packages("earth")
+        shell: sudo Rscript {0}
+
+      - uses: julia-actions/setup-julia@latest
+        with:
+          version: ${{ matrix.julia-version }}
+            
+      - uses: julia-actions/julia-runtest@v1
+        env:
+          LD_LIBRARY_PATH: /opt/R/${{ matrix.r-version }}/lib/R/lib
+      - uses: julia-actions/julia-processcoverage@v1
+      - uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: lcov.info
+      - uses: julia-actions/julia-docdeploy@v1
+        if: ${{ matrix.os == 'ubuntu-22.04' && matrix.julia-version == '1.8' }} # only run docs in one env
+        env:
+          LD_LIBRARY_PATH: /opt/R/${{ matrix.r-version }}/lib/R/lib
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # If authenticating with GitHub Actions token
+          DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }} # If authenticating with SSH deploy key
