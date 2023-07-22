@@ -1,5 +1,2 @@
 Manifest.toml
 docs/build
-# temp hidden, release depends on another private package
-src/cpr_lasso_subset.R
-src/splines.jl

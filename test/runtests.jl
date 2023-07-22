@@ -18,6 +18,8 @@ end
     res = df_regtree(ps = [1, 2], maxd = 2)
     @test res[1, 1] < res[2, 1] < res[3, 1]
     @test res[4, 1] < res[5, 1] < res[6, 1]
+    run_experiment_tree(nrep = 1)
+    @test isfile("/tmp/regtrees.tex")
 end
 
 @testset "MARS" begin
@@ -26,4 +28,14 @@ end
     mars_experiment_df_vs_df(ps = [2], maxnk = 2)
     @test isfile("/tmp/df-vs-df-n100-p2-maxnk2-d2.pdf")
     @test isfile("/tmp/df-vs-df-n100-p2-maxnk2-d1.pdf")
+end
+
+@testset "splines" begin
+    run_experiment_splines(nrep = 1)
+    @test isfile("/tmp/splines.tex")
+end
+
+@testset "best subset" begin
+    run_experiment_lasso_vs_subset()
+    @test isfile("/tmp/df_lasso_subset.pdf")
 end

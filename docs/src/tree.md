@@ -7,3 +7,7 @@
 using DegreesOfFreedom
 df_regtree(ps = [1, 2], maxd = 2)
 ```
+
+```@example
+run_experiment_tree(nrep = 1)
+```

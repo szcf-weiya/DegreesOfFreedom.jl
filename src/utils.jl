@@ -17,3 +17,6 @@ end
 
 # Tip: convert tuple (a, b, c) to array [a, b, c] via `collect`
 save_plots(ps::Tuple; kw...) = save_plots(collect(ps); kw...)
+
+# used in print2tex
+writeline(io, str...) = write(io, str..., "\n")

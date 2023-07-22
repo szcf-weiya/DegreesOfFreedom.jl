@@ -28,6 +28,9 @@ jobs:
           r["CRAN"] = "https://cloud.r-project.org/"
           options(repos=r)
           install.packages("earth")
+          install.packages("mvtnorm")
+          install.packages("glmnet")
+          install.packages("leaps")
         shell: sudo Rscript {0}
 
       - uses: julia-actions/setup-julia@latest
