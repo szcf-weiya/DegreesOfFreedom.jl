@@ -31,6 +31,10 @@ jobs:
           install.packages("mvtnorm")
           install.packages("glmnet")
           install.packages("leaps")
+          install.packages("fda") # required by MonotoneSplines.jl
+          install.packages("splines") # required by MonotoneSplines.jl
+          
+
         shell: sudo Rscript {0}
 
       - uses: julia-actions/setup-julia@latest
