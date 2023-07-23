@@ -56,7 +56,8 @@ function calc_df_spl(; method = "lm", J = 4, λ = 1, verbose = false,
             # so J = nknots + 2
             # spl = R"smooth.spline($x, $(y[:,i]), lambda = $lambda, nknots = $(J-2))"
             # fix nknots = n
-            spl = R"smooth.spline($x, $(y[:,i]), lambda = $λ, nknots = $(n))"
+            lam = λ # see #2
+            spl = R"smooth.spline($x, $(y[:,i]), lambda = $lam, nknots = $(n))"
             if i == 1
                 df = rcopy(R"$spl$df")
             end
