@@ -16,3 +16,7 @@ julia> ]
 ## :books: Documentation
 
 The documentation <https://hohoweiya.xyz/DegreesOfFreedom.jl/stable/> elaborates on the degrees of freedom of various popular machine learning methods, including Lasso, Best Subset, Regression Tree, Splines and MARS. 
+
+## :rocket: R package
+
+We also wrap up the correcting procedure for MARS as a standalone R package [earth.dof.patch](https://github.com/szcf-weiya/earth.dof.patch). By its name, it can be viewed as a patch package on the `earth` package for MARS. You can quickly try our approach after loading `earth` and `earth.dof.patch`. A toy example can be found [here](https://hohoweiya.xyz/earth.dof.patch/articles/MSE-Comparisons.html).

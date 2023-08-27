@@ -1,4 +1,5 @@
 using RCall
+using Random
 using LaTeXStrings
 using StatsPlots
 
@@ -87,7 +88,7 @@ function plot_df_mars(d = 1, maxnk = 20, p = 10, n = 100; method = "iter", maxit
     # savefig("../res/df/df-vs-df-$method-n$n-p$p-maxnk$maxnk-d$d.pdf")
 end
 
-function sol_mars_df_and_penalty(; n = 20, p = 2, N = 100, nk = 5, tol = 1e-3, maxiter = 10, trace_plot = false, d = 1)
+function sol_mars_df_and_penalty(; n = 20, p = 2, N = 100, nk = 5, tol = 1e-3, maxiter = 10, trace_plot = false, d = 1, seedx = 1234, seedy = 5432)
     arr_penalty = Float64[]
     arr_dfcov = Float64[]
     arr_dfapp = Float64[]
@@ -96,7 +97,9 @@ function sol_mars_df_and_penalty(; n = 20, p = 2, N = 100, nk = 5, tol = 1e-3, m
     iter = 0
     while true
         push!(arr_penalty, penalty)
-        df_cov, df_app = calc_df_mars(penalty = penalty, n = n, p = p, N = N, nk = nk, d = d)
+        # based on our experiments, the number of selected terms is somewhat robust to penalty, 
+        # so the loop would finish after two iterations.
+        df_cov, df_app = calc_df_mars(penalty = penalty, n = n, p = p, N = N, nk = nk, d = d, seedx = seedx, seedy = seedy)
         push!(arr_dfcov, df_cov)
         push!(arr_dfapp, df_app)
         # average # of selected terms
@@ -125,26 +128,15 @@ function sol_mars_df_and_penalty(; n = 20, p = 2, N = 100, nk = 5, tol = 1e-3, m
     return arr_dfcov, arr_dfapp, arr_penalty
 end
 
-function calc_df_mars(;n = 100, p = 10, N = 100, nk = 5, d = 1, penalty = d+1, tol = 1e-6)
-    y = randn(n, N)
-    x = randn(n, p)
+function calc_df_mars(;n = 100, p = 10, N = 100, nk = 5, d = 1, penalty = d+1, tol = 1e-6, seedx = rand(UInt), seedy = rand(UInt))
+    y = randn(MersenneTwister(seedy), n, N)
+    x = randn(MersenneTwister(seedx), n, p)
     yhat = zeros(n, N)
-    ms = zeros(N)
-    cm = zeros(N)
     dfhat = zeros(N)
-    cs = zeros(N)
     for i = 1:N
         R"mars.fit = earth::earth($x, $(y[:, i]), nk = $nk, thresh = 0, pmethod = 'none', degree = $d, penalty = $penalty)"
-        B = rcopy(R"mars.fit$bx")
-        #cm[i] = tr(B * inv(B' * B) * B') # containing the intercept, so no need to add 1 as in the manuscript
         yhat[:, i] = rcopy(R"predict(mars.fit)")
-        #ms[i] = R"length(mars.fit$selected.terms)"
         ns = rcopy(R"length(mars.fit$selected.terms)")
-        #cm[i] should equal to ms[i]
-        # if round(ms[i], digits=0) != round(cm[i], digits = 0)
-        #     @warn "number of selected terms $(ms[i]) NOT equals to calculated trace $(cm[i])"
-        # end
-        # println("nrow(B) = $(size(B, 1)), cm = $(cm[i]), ms = $(ms[i])")
         # dfhat[i] = cm[i] + penalty * (ms[i] - 1) / 2 # exclude the intercept; divide by 2 comes from the code L1033 version 5.3.1
         dfhat[i] = ns + penalty * ((ns - 1)/2)
         # check gcv with dfhat[i]
