@@ -299,8 +299,14 @@ function plot_demo(X, y, β, DFS, RSS, RSS0, errs, λs, tol, res_cvlasso)
     βs, yhats, dfs = iter_ridge(X, y, 2n*λs[ind], tol = tol, remove = false, err_type = "max")
     m = size(βs, 2)
     alphas = range(0.2, 1, length = m)
-    lbls = vcat("Ridge", "IterRidge (1 step)", "IterRidge (n step)", repeat([""], m-4), "IterRidge (converged)")
-    fig_βs = plot(βs, color = :red, alpha = reshape(alphas, 1, :), label = reshape(lbls, 1, :), title = "n = $n, p = $p, λ = $(round.(λs[ind]*2n, digits=3))", xlab = "i", ylab = "β[i]", legend = :topright) 
+    if (m == 3)
+        lbls = vcat("Ridge", "IterRidge (1 step)", "IterRidge (converged)")
+    else
+        lbls = vcat("Ridge", "IterRidge (1 step)", "IterRidge (n step)", repeat([""], m-4), "IterRidge (converged)")
+    end
+    fig_βs = plot(βs, color = :red, alpha = reshape(alphas, 1, :), label = reshape(lbls, 1, :), 
+                        title = "n = $n, p = $p, λ = $(round.(λs[ind]*2n, digits=3))", 
+                        xlab = "i", ylab = "β[i]", legend = :topright) 
     plot!(fig_βs, β, label = "Truth", ls = :dash)
     plot!(fig_βs, coef(res_cvlasso), ls = :dot, label = "Lasso", lw = 2)
     ## gcv plot
