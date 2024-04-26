@@ -3,11 +3,11 @@
 !!! note
     For simple demonstration and fast auto-generation via GitHub Action, here we do not run the complete experiment presented in the paper. 
 
-```@example
+```@example 1
 using DegreesOfFreedom
 df_regtree(ps = [1, 2], maxd = 2)
 ```
 
-```@example
+```@example 1
 run_experiment_tree(nrep = 1)
 ```
