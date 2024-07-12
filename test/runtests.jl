@@ -32,7 +32,7 @@ end
 
 @testset "splines" begin
     run_experiment_splines(nrep = 1)
-    @test isfile("/tmp/splines.tex")
+    @test isfile("/tmp/splines-nrep1-nMC100-n100.tex")
 end
 
 @testset "best subset" begin
