@@ -5,7 +5,7 @@
 
 ```@example
 using DegreesOfFreedom
-mars_experiment_mse(ps = [20, 40], folder = ".")
+mars_experiment_mse(ps = [20, 40], folder = ".", with_cv = true)
 ```
 
 ```@raw html

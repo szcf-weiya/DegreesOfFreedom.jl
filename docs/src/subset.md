@@ -4,7 +4,7 @@ Reproduce the comparisons of degrees of freedom between the best subset and Lass
 
 ```@example
 using DegreesOfFreedom
-run_experiment_lasso_vs_subset(folder = ".")
+run_experiment_lasso_vs_subset(folder = ".", ylim = 12.5)
 ```
 
 ```@raw html

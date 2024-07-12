@@ -29,27 +29,27 @@ function linear_indep_rows(X::AbstractMatrix, tol = 1e-10)
 end
 
 function calc_df_spl(; method = "lm", J = 4, λ = 1, verbose = false,
-                   n = 20, nrep = 1000, tol = 1e-6, p = 10, calc_theoretical_df = false)
-    y = randn(n, nrep)
+                   n = 20, nMC = 1000, tol = 1e-6, p = 10, calc_theoretical_df = false)
+    y = randn(n, nMC)
     x = collect(1.0:n)
     # x = randn(n, p)
-    yhat = zeros(n, nrep)
+    yhat = zeros(n, nMC)
     # theoretical df
     df = nothing
-    dfs = zeros(nrep)
+    dfs = zeros(nMC)
     if method == "lm"
         df = 2
-        for i = 1:nrep
+        for i = 1:nMC
             yhat[:, i] = rcopy(R"lm($(y[:,i]) ~ $x)$fitted.values")
         end
     elseif method == "cubic_spline"
         # cubic spline
         df = J
-        for i = 1:nrep
+        for i = 1:nMC
             yhat[:, i] = MonotoneSplines.predict(MonotoneSplines.bspline(x, y[:, i], J), x)
         end
     elseif method == "cubic_smooth_spline"
-        for i = 1:nrep
+        for i = 1:nMC
             # spl = R"smooth.spline($x, $(y[:,i]), lambda = $lambda)"
             # number of basis functions J = K + M = K + 4
             # where K is the number of internal knots, K = nknots - 2,
@@ -64,7 +64,7 @@ function calc_df_spl(; method = "lm", J = 4, λ = 1, verbose = false,
             yhat[:, i] = rcopy(R"predict($spl)$y")
         end
     elseif method == "monotone_cubic_spline"
-        for i = 1:nrep
+        for i = 1:nMC
             monocs = MonotoneSplines.mono_cs(x, y[:, i], J)
             yhat[:, i] = monocs.fitted
             neq = sum(abs.(monocs.β[1:end-1] - monocs.β[2:end]) .< tol)
@@ -72,7 +72,7 @@ function calc_df_spl(; method = "lm", J = 4, λ = 1, verbose = false,
         end
         df = mean(dfs)
     elseif method == "monotone_smooth_spline"
-        for i = 1:nrep
+        for i = 1:nMC
             monoss = MonotoneSplines.mono_ss(x, y[:, i], λ)
             yhat[:, i] = monoss.fitted
             if calc_theoretical_df
@@ -95,8 +95,8 @@ function calc_df_spl(; method = "lm", J = 4, λ = 1, verbose = false,
         end
         df = mean(dfs)
         # elseif method == "tree"
-    #     ms = zeros(nrep)
-    #     for i = 1:nrep
+    #     ms = zeros(nMC)
+    #     for i = 1:nMC
     #         treefit = R"rpart::rpart($(y[:,i]) ~ $x)"
     #         yhat[:, i] = rcopy(R"predict($treefit)")
     #         #yhat[:, i] = rcopy(R"predict(rpart::rpart($(y[:,i]) ~ $x))")
@@ -111,17 +111,17 @@ function calc_df_spl(; method = "lm", J = 4, λ = 1, verbose = false,
     sum([cov(y[i, :], yhat[i, :]) for i = 1:n]), df, dfs
 end
 
-function rep_calc_df_spl(N = 10; fig = false, kw...)
-    dfs = zeros(N)
+function rep_calc_df_spl(nrep = 10; fig = false, kw...)
+    dfs = zeros(nrep)
     df = nothing
-    for j = 1:N
+    for j = 1:nrep
         if j == 1
             dfs[j], df = calc_df_spl(; kw...)
         else
             dfs[j] = calc_df_spl(; kw...)[1]
         end
     end
-    μ, σ = mean(dfs), std(dfs)/sqrt(N)
+    μ, σ = mean(dfs), std(dfs)/sqrt(nrep)
     if fig
         histogram(dfs, title = "μ = $(round(μ, digits = 3)), σ = $(round(σ, digits = 3))", legend = false)
     else
@@ -130,12 +130,12 @@ function rep_calc_df_spl(N = 10; fig = false, kw...)
 end
 
 # estimate df of cubic monotone spline
-function est_df(method = "monotone_cubic_spline"; Js = 4:30, nrep = 100, N = 100, n = 20, kw...)
+function est_df(method = "monotone_cubic_spline"; Js = 4:30, nMC = 100, nrep = 100, n = 20, kw...)
     res = zeros(length(Js), 3)
     for (i, J) in enumerate(Js)
         println("J = $J")
         try
-            res[i, :] .= rep_calc_df_spl(N; method = method, J = J, fig=false, nrep = nrep, n = n, kw...)
+            res[i, :] .= rep_calc_df_spl(nrep; method = method, J = J, fig=false, nMC = nMC, n = n, kw...)
         catch e
             println(e)
         end
@@ -149,19 +149,28 @@ end
 #     plot(Js, df_ms[:, 1], yerror = df_ms[:, 2], label = "monotone", legend = :topleft)
 #     plot!(Js, log.(Js) .+ 1/2, label = "log(J) + 1/2", lw=3)
 # end
+"""
+    df_splines(; Js = [5, 10, 15], λs = [0.001, 0.01, 0.1], n = 20, nrep = 10, nMC = 100)
 
-function df_splines(;Js = [5, 10, 15], λs = [0.001, 0.01, 0.1], n = 20, N = 10, nrep = 100)
+Calculate the empirical degrees of freedom of four splines:
+- cubic splines with number of basis functions `Js`
+- smoothing splines with tuning parameter `λs`
+- sample size `n`
+- number of repetition `nrep`
+- number of Monte Carlo samples `nMC`
+"""
+function df_splines(; Js = [5, 10, 15], λs = [0.001, 0.01, 0.1], n = 20, nrep = 10, nMC = 100)
     nJ = length(Js)
     nλ = length(λs)
     res = zeros(nJ*2 + nλ*2, 3)
     # cubic spline
     for (j, J) in enumerate(Js)
-        res[j, :] .= rep_calc_df_spl(N, method="cubic_spline", J = J, n = n, nrep = nrep)
-        res[nJ + j, :] .= rep_calc_df_spl(N, method="monotone_cubic_spline", J = J, n = n, nrep = nrep)
+        res[j, :] .= rep_calc_df_spl(nrep, method="cubic_spline", J = J, n = n, nMC = nMC)
+        res[nJ + j, :] .= rep_calc_df_spl(nrep, method="monotone_cubic_spline", J = J, n = n, nMC = nMC)
     end
     for (i, λ) in enumerate(λs)
-        res[2nJ + i, :] .= rep_calc_df_spl(N, method="cubic_smooth_spline", λ = λ, n = n, nrep = nrep)
-        res[2nJ + nλ + i, :] .= rep_calc_df_spl(N, method="monotone_smooth_spline", λ = λ, n = n, nrep = nrep)
+        res[2nJ + i, :] .= rep_calc_df_spl(nrep, method="cubic_smooth_spline", λ = λ, n = n, nMC = nMC)
+        res[2nJ + nλ + i, :] .= rep_calc_df_spl(nrep, method="monotone_smooth_spline", λ = λ, n = n, nMC = nMC)
     end
     return res
 end
@@ -170,15 +179,19 @@ end
     run_experiment_splines()
 
 Run the experiment of splines, whose results will be saved into a `.sil` file (can be later loaded via `deserialize`) and a `.tex` file (the table displayed in the paper).
+
+```julia
+run_experiment_splines(folder = "/home/weiya/Overleaf/paperDoF/res/df")
+```
 """
 function run_experiment_splines(; folder = "/tmp", # "../res/df"
-                                nrep = 100)
-    res = df_splines(N = 100, nrep = nrep)
-    timestamp = replace(strip(read(`date -Iseconds`, String)), ":"=>"_")
-    serialize(joinpath(folder, "splines$timestamp.sil"), res)
+                                nMC = 100, n = 100, nrep = 100)
+    res = df_splines(nrep = nrep, nMC = nMC, n = n)
+    filename = "splines-nrep$nrep-nMC$nMC-n$n"
+    serialize(joinpath(folder, "$filename.sil"), res)
     # if needed, load the save results as follows
     #res = deserialize("../res/df/splines2023-01-24T22_38_22-05_00.sil")
-    print2tex_spl(res, [5, 10, 15], [0.001, 0.01, 0.1], folder)
+    print2tex_spl(res, [5, 10, 15], [0.001, 0.01, 0.1], folder, "$filename.tex")
 end
 
 function print2tex_spl(res0, Js, λs, folder = "../res/df", filename = "splines.tex")

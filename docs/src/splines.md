@@ -6,7 +6,13 @@
 
 ```@example
 using DegreesOfFreedom
-df_splines(N = 2, nrep = 10)
+df_splines(n = 20, nrep = 2, nMC = 10)
 ```
 
-where `nrep` is the number of Monte Carlo samples to estimate the degrees of freedom and `N` is the number of repetitions. The columns are `estimated df`, `standard deviation of df` and `theoretical df`, respectively.
+where 
+
+- `n` is the sample size
+- `nMC` is the number of Monte Carlo samples to estimate the degrees of freedom
+- `nrep` is the number of repetitions. 
+
+These three columns are `estimated df`, `standard deviation of df` and `theoretical df`, respectively.
